@@ -338,14 +338,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.8.1":
-  version: 1.8.1
-  resolution: "axios@npm:1.8.1"
+"axios@npm:^1.8.3":
+  version: 1.8.3
+  resolution: "axios@npm:1.8.3"
   dependencies:
     follow-redirects: ^1.15.6
     form-data: ^4.0.0
     proxy-from-env: ^1.1.0
-  checksum: 3c434b86bb690046b5861134e9cee9b273467f0d82b64b9074f7da5004855826833736a1c6a9c05bf9af225ddd52b3da857a99d59e6736490b18e2cbc1ccb67e
+  checksum: 85fc8ad7d968e43ea9da5513310637d29654b181411012ee14cc0a4b3662782e6c81ac25eea40b5684f86ed2d8a01fa6fc20b9b48c4da14ef4eaee848fea43bc
   languageName: node
   linkType: hard
 
@@ -1547,7 +1547,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "pgadmin4@workspace:."
   dependencies:
-    axios: ^1.8.1
+    axios: ^1.8.3
     electron: 34.3.0
     electron-context-menu: ^4.0.5
     electron-store: ^10.0.0
