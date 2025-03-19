@@ -1,4 +1,4 @@
 {
-    "pythonPath": "C:/Python38/python.exe",
+    "pythonPath": "/home/gautham/miniprojectiitm/pgadmin4/venv/bin/python3",
     "pgadminFile": "../web/pgAdmin4.py"
 }

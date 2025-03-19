@@ -13,9 +13,19 @@ import fs from 'fs';
 import path from 'path';
 import * as misc from './misc.js';
 import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { setupMenu } from './menu.js';
 import contextMenu from 'electron-context-menu';
+
+// Add this at the top of pgadmin.js
+try {
+  require('electron-reloader')(module, {
+    debug: true, // Enable debug logging
+    watchRenderer: true, // Watch changes in renderer files (e.g., HTML, CSS, JS)
+  });
+} catch (_) {
+  console.log('Hot-reloading enabled.');
+}
 
 const configStore = new Store({
   defaults: {
