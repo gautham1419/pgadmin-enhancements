@@ -1,19 +1,56 @@
 # pgAdmin Enhancements
 
 This repository contains enhancements made to pgAdmin, including:
-- **Dark Mode Toggle** (by Gautham )
+- **Dark Mode Toggle** (by Gautham Binu)
 - **SMS 2FA Integration** (by Arathy S)
 
 ## 🔥 Features
 
 # 1️⃣ Dark Mode Toggle
 
-- Added a toggle button to switch between light and dark mode.
-- Saves user preference for persistent theme selection.
+1.Created a component called Themetoggle.jsx
 
-Code: The code havent been pulled to the main branch , its in togglebutton branch 
+-![image](https://github.com/user-attachments/assets/7984c3c6-b8f4-4ec0-9705-4b018e6052b5)
 
-#### **Demo:**
+this component contains the logic to store the preferences and update it once the toggle button is clicked.
+
+2.Updated Appmenubar.jsx so as to include the Themetoggle.jsx
+
+![image](https://github.com/user-attachments/assets/e7dad66a-747b-43a0-a382-ef530e2fa4c9)
+
+this renders the toggle component along with the other menubar items .
+
+3.Dark-Mode Theme Change Flow 
+
+User clicks theme toggle
+  ↓
+ThemeToggle component
+  ↓
+handleThemeChange() triggered
+  ↓
+Update local preference store
+  ↓
+Send update to server
+  ↓
+Trigger preferenceChange event
+  ↓
+ThemeProvider receives update
+  ↓
+Apply new theme to entire app
+
+4.Testing
+
+-Verified theme switching works correctly.
+
+-Confirmed preferences persist across sessions.
+
+-Tested UI consistency in both themes.
+
+-Validated all components render properly in both modes.
+
+This implementation provides a seamless dark mode experience while maintaining pgAdmin's existing functionality and user interface patterns.
+
+
 
 [📺 Watch Video Demo](docs/togglebutton.mp4)
 
