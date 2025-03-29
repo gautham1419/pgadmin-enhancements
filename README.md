@@ -13,9 +13,9 @@ This repository contains enhancements made to pgAdmin, including:
 
 #### **Demo:**
 
-![Dark Mode Toggle](docs/dark_mode_screenshot.png)
 
-[📺 Watch Video Demo](docs/dark_mode_demo.mp4)
+
+[📺 Watch Video Demo](docs/togglebutton.mp4)
 
 ### 2️⃣ SMS 2FA
 
