@@ -11,6 +11,8 @@ This repository contains enhancements made to pgAdmin, including:
 - Added a toggle button to switch between light and dark mode.
 - Saves user preference for persistent theme selection.
 
+Code: The code havent been pulled to the main branch , its in togglebutton branch 
+
 #### **Demo:**
 
 
