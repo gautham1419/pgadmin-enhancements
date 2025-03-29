@@ -52,7 +52,11 @@ This implementation provides a seamless dark mode experience while maintaining p
 
 
 
-[📺 Watch Video Demo]![image](https://github.com/user-attachments/assets/af299faa-4124-42a8-b796-9b5d4fe6d2a6)
+## 🎥 Toggle Button Demo
+Click the link below to watch the demo video:
+
+[🎬 Watch Video](https://github.com/user-content-assets/assets/94d1ac4d-30d2-42f1-9b01-1295283d03ea)
+
 
 
 
