@@ -1,4 +1,32 @@
-# pgAdmin 4
+# pgAdmin Enhancements
+
+This repository contains enhancements made to pgAdmin, including:
+- **Dark Mode Toggle** (by Gautham )
+- **SMS 2FA Integration** (by Arathy S)
+
+## 🔥 Features
+
+### 1️⃣ Dark Mode Toggle
+- Added a toggle button to switch between light and dark mode.
+- Saves user preference for persistent theme selection.
+
+#### **Demo:**
+![Dark Mode Toggle](docs/dark_mode_screenshot.png)
+
+[📺 Watch Video Demo](docs/dark_mode_demo.mp4)
+
+### 2️⃣ SMS 2FA
+- Implemented Two-Factor Authentication (2FA) using SMS.
+- Enhances security by requiring a one-time password (OTP).
+
+#### **Demo:**
+![SMS 2FA](docs/sms_2fa_screenshot.png)
+
+[📺 Watch Video Demo](docs/sms_2fa_demo.mp4)
+
+---
+
+#Pgadmin4 Setup instructions:
 
 pgAdmin 4 is a rewrite of the popular pgAdmin3 management tool for the
 PostgreSQL (http://www.postgresql.org) database.
