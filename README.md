@@ -53,7 +53,14 @@ This implementation provides a seamless dark mode experience while maintaining p
 
 
 
+Pgadmin before toggle button :
+
+![pgadminhome](https://github.com/user-attachments/assets/6e18e3ec-64ab-4ab9-9bac-722e50746e79)
+
+After implementing Toggle button :
+
 ## 🎥 Toggle Button Demo
+
 Click the link below to watch the demo video:
 
 [🎬 Watch Video](https://github.com/user-content-assets/assets/94d1ac4d-30d2-42f1-9b01-1295283d03ea)
