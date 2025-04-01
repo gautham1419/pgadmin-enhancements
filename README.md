@@ -8,20 +8,20 @@ This repository contains enhancements made to pgAdmin, including:
 
 # 1️⃣ Dark Mode Toggle
 
-1.Created a component called Themetoggle.jsx
+1.Created a component called `Themetoggle.jsx`
 
 -![image](https://github.com/user-attachments/assets/7984c3c6-b8f4-4ec0-9705-4b018e6052b5)
 
 this component contains the logic to store the preferences and update it once the toggle button is clicked.
 
-2.Updated Appmenubar.jsx so as to include the Themetoggle.jsx
+2.Updated `Appmenubar.jsx` so as to include the `Themetoggle.jsx`
 
 ![image](https://github.com/user-attachments/assets/e7dad66a-747b-43a0-a382-ef530e2fa4c9)
 
 this renders the toggle component along with the other menubar items .
 
 3.Dark-Mode Theme Change Flow 
-
+```
 User clicks theme toggle
   ↓
 ThemeToggle component
@@ -37,6 +37,7 @@ Trigger preferenceChange event
 ThemeProvider receives update
   ↓
 Apply new theme to entire app
+```
 
 4.Testing
 
