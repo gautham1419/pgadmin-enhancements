@@ -20,7 +20,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const extractStyle = new MiniCssExtractPlugin({
   filename: '[name].css',
-  chunkFilename: '[name].css',
+  chunkFilename: '[name].css'
 });
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const CopyPlugin = require('copy-webpack-plugin');
@@ -47,7 +47,7 @@ const providePlugin = new webpack.ProvidePlugin({
 // from bundle so that they are accessible by search in Chrome's sources panel.
 // Reference: https://webpack.js.org/plugins/source-map-dev-tool-plugin/#components/sidebar/sidebar.jsx
 const sourceMapDevToolPlugin = new webpack.SourceMapDevToolPlugin({
-  filename: '[name].js.map',
+  filename: '[file].map',
   exclude: /(vendor|codemirror|pgadmin\.js|pgadmin.theme|pgadmin.static|style\.js|popper)/,
   columns: false,
 });
@@ -68,9 +68,21 @@ const copyFiles = new CopyPlugin({
 });
 
 module.exports = [{
-  mode: envType,
-  devtool: devToolVal,
-  stats: { children: false, builtAt: true, chunks: true, timings: true },
+  mode: 'development',
+  devtool: 'source-map',
+  cache: false,  // Disable caching
+  stats: {  all: true,
+    colors: true,
+    errors: true,
+    errorDetails: true,
+    warnings: true,
+    timings: true,
+    builtAt: true,
+    hash: true,
+    assets: true,
+    entrypoints: true,
+    modules: true,
+    version: true, },
   // The base directory, an absolute path, for resolving entry points and loaders
   // from configuration.
   context: __dirname,
@@ -93,7 +105,7 @@ module.exports = [{
     filename: '[name].js',
     chunkFilename: '[name].chunk.js?id=[chunkhash]',
     libraryExport: 'default',
-    publicPath: '',
+    publicPath: '/static/js/generated/',
   },
   // Templates files which contains python code needs to load dynamically
   // Such files specified in externals are loaded at first and defined in
@@ -322,7 +334,7 @@ module.exports = [{
       ],
     }],
     // Prevent module from parsing through webpack, helps in reducing build time
-    noParse: [/moment.js/],
+    noParse: [/moment.js/, /\.map$/],
   },
   resolve: {
     alias: webpackShimConfig.resolveAlias,
@@ -446,11 +458,11 @@ module.exports = [{
     providePlugin,
     sourceMapDevToolPlugin,
     bundleAnalyzer,
-    copyFiles,
-  ]: [
+    copyFiles
+  ] : [
     extractStyle,
     providePlugin,
     sourceMapDevToolPlugin,
-    copyFiles,
-  ],
+    copyFiles
+  ]
 }];
