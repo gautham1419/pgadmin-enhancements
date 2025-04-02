@@ -852,9 +852,13 @@ CustomSelectInput.propTypes = {
 
 function CustomSelectOption(props) {
   return (
-    <RSComponents.Option {...props}>
-      <OptionView image={props.data.image} imageUrl={props.data.imageUrl} label={props.data.label} />
-    </RSComponents.Option>
+    <Tooltip title={props.data.tooltip || props.data.description || ''}>
+      <div>
+        <RSComponents.Option {...props}>
+          <OptionView image={props.data.image} imageUrl={props.data.imageUrl} label={props.data.label} />
+        </RSComponents.Option>
+      </div>
+    </Tooltip>
   );
 }
 CustomSelectOption.propTypes = {
@@ -916,109 +920,70 @@ InputSelectNonSearch.propTypes = {
   })),
 };
 
-export const InputSelect = forwardRef(({
-  cid, helpid, onChange, options, readonly = false, value, controlProps = {}, optionsLoaded, optionsReloadBasis, disabled, ...props }, ref) => {
-  const [[finalOptions, isLoading], setFinalOptions] = useState([[], true]);
+export const InputSelect = forwardRef(({ cid, helpid, value, options, onChange, disabled, readonly, controlProps, optionsLoaded, optionsReloadBasis, ...props }, ref) => {
   const theme = useTheme();
+  const [optionsData, setOptionsData] = useState([]);
+  const styles = useMemo(()=>customReactSelectStyles(theme, readonly), [theme, readonly]);
 
-  useWindowSize();
-
-  /* React will always take options let as changed parameter. So,
-  We cannot run the below effect with options dependency as it will keep on
-  loading the options. optionsReloadBasis is helpful to avoid repeated
-  options load. If optionsReloadBasis value changes, then options will be loaded again.
-  */
-  useEffect(() => {
-    let optPromise = options, umounted = false;
-    if (typeof options === 'function') {
+  useEffect(()=>{
+    let unmounted = false;
+    let optPromise = options;
+    if(typeof(options) === 'function') {
       optPromise = options();
     }
-    setFinalOptions([[], true]);
-    Promise.resolve(optPromise)
-      .then((res) => {
-        /* If component unmounted, dont update state */
-        if (!umounted) {
-          optionsLoaded?.(res, value);
-          /* Auto select if any option has key as selected */
-          const flatRes = flattenSelectOptions(res || []);
-          let selectedVal;
-          if (controlProps.multiple) {
-            selectedVal = _.filter(flatRes, (o) => o.selected)?.map((o) => o.value);
-          } else {
-            selectedVal = _.find(flatRes, (o) => o.selected)?.value;
-          }
-
-          if ((!_.isUndefined(selectedVal) && !_.isArray(selectedVal)) || (_.isArray(selectedVal) && selectedVal.length != 0)) {
-            onChange?.(selectedVal);
-          }
-          setFinalOptions([res || [], false]);
-        }
-      });
-    return () => umounted = true;
+    Promise.resolve(optPromise).then((res)=>{
+      if(!unmounted) {
+        setOptionsData(res || []);
+        optionsLoaded?.();
+      }
+    });
+    return ()=>{
+      unmounted = true;
+    };
   }, [optionsReloadBasis]);
 
-  /* Apply filter if any */
-  const filteredOptions = (controlProps.filter?.(finalOptions)) || finalOptions;
-  const flatFiltered = flattenSelectOptions(filteredOptions);
-  let realValue = getRealValue(flatFiltered, value, controlProps.creatable, controlProps.formatter);
-  if (realValue && _.isPlainObject(realValue) && _.isUndefined(realValue.value)) {
-    console.error('Undefined option value not allowed', realValue, filteredOptions);
-  }
-  const otherProps = {
-    isSearchable: !readonly,
-    isClearable: !readonly && (!_.isUndefined(controlProps.allowClear) ? controlProps.allowClear : true),
-    isDisabled: Boolean(disabled),
-  };
-
-  const styles = customReactSelectStyles(theme, readonly || disabled);
-
-  const onChangeOption = useCallback((selectVal) => {
-    if (_.isArray(selectVal)) {
-      // Check if select all option is selected
-      if (!_.isUndefined(selectVal.find(x => x.label === '<Select All>'))) {
-        selectVal = filteredOptions;
-      }
-      /* If multi select options need to be in some format by UI, use formatter */
-      if (controlProps.formatter) {
-        selectVal = controlProps.formatter.toRaw(selectVal, filteredOptions);
-      } else {
-        selectVal = selectVal.map((option) => option.value);
-      }
-      onChange?.(selectVal);
-    } else {
-      onChange?.(selectVal ? selectVal.value : null);
-    }
-  }, [onChange, filteredOptions]);
+  const realValue = useMemo(()=>getRealValue(optionsData, value, Boolean(controlProps?.creatable), controlProps?.formatter),
+    [optionsData, value, controlProps?.creatable, controlProps?.formatter]);
 
   const commonProps = {
+    ref: ref,
+    isDisabled: disabled || readonly,
+    value: realValue,
+    onChange: (selectVal) => {
+      let val = selectVal;
+      if(controlProps?.multiple && _.isArray(selectVal)) {
+        val = selectVal.map((v)=>v.value);
+      } else if(!_.isArray(selectVal)) {
+        val = selectVal?.value;
+      }
+      onChange(val);
+    },
+    styles: styles,
+    options: optionsData,
+    isMulti: controlProps?.multiple,
+    isClearable: controlProps?.allowClear,
+    className: props.className,
+    classNamePrefix: 'react-select',
+    menuPlacement: 'auto',
+    maxMenuHeight: 200,
     components: {
+      Input: CustomSelectInput,
       Option: CustomSelectOption,
       SingleValue: CustomSelectSingleValue,
-      IndicatorSeparator: controlProps.noDropdown ? null: RSComponents.IndicatorSeparator,
-      DropdownIndicator: controlProps.noDropdown ? null: RSComponents.DropdownIndicator,
-      Input: CustomSelectInput,
     },
-    isMulti: Boolean(controlProps.multiple),
-    openMenuOnClick: !readonly,
-    onChange: onChangeOption,
-    isLoading: isLoading,
-    options: controlProps.allowSelectAll ? [{ label: gettext('<Select All>'), value: '*' }, ...filteredOptions] : filteredOptions,
-    value: realValue,
+    noOptionsMessage: ()=>controlProps?.noDropdown ? null : gettext('No options.'),
+    placeholder: controlProps?.placeholder || gettext('Select...'),
     menuPortalTarget: document.body,
-    styles: styles,
-    inputId: cid,
-    placeholder: (readonly || disabled) ? '' : controlProps.placeholder || gettext('Select an item...'),
-    maxLength: controlProps.maxLength,
-    ...otherProps,
     ...props,
   };
+
   const selectValue = useMemo(()=>{
     if(_.isArray(realValue)) {
       return realValue.map((o)=>o?.label)?.join(',');
     }
     return realValue?.label;
   }, [realValue]);
-  if (!controlProps.creatable) {
+  if (!controlProps?.creatable) {
     return (
       <>
         <Select ref={ref} {...commonProps} />
@@ -1032,7 +997,7 @@ export const InputSelect = forwardRef(({
           ref={ref}
           {...commonProps}
           noOptionsMessage={() =>
-            !controlProps.noDropdown ? 'No options' : null
+            !controlProps?.noDropdown ? 'No options' : null
           }
         />
         {helpid && <input data-testid="select-value" style={{display: 'none'}} defaultValue={selectValue} id={cid} aria-describedby={helpid} />}

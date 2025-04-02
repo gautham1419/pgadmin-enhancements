@@ -88,8 +88,44 @@ export function getConnectionParameters() {
     'min_server_version': '12'
   }, {
     'value': 'sslmode', 'label': gettext('SSL mode'), 'vartype': 'enum',
-    'enumvals': [gettext('allow'), gettext('prefer'), gettext('require'),
-      gettext('disable'), gettext('verify-ca'), gettext('verify-full')]
+    'enumvals': [
+      {
+        'label': gettext('allow'),
+        'value': 'allow',
+        'description': gettext('SSL is optional, but it will only be used if the server requires it'),
+        'tooltip': gettext('SSL is optional, but it will only be used if the server requires it')
+      },
+      {
+        'label': gettext('prefer'),
+        'value': 'prefer',
+        'description': gettext('SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful'),
+        'tooltip': gettext('SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful')
+      },
+      {
+        'label': gettext('require'),
+        'value': 'require',
+        'description': gettext('SSL encryption is required for the connection. The connection will fail if SSL cannot be established'),
+        'tooltip': gettext('SSL encryption is required for the connection. The connection will fail if SSL cannot be established')
+      },
+      {
+        'label': gettext('disable'),
+        'value': 'disable',
+        'description': gettext('SSL is disabled and the connection will be unencrypted'),
+        'tooltip': gettext('SSL is disabled and the connection will be unencrypted')
+      },
+      {
+        'label': gettext('verify-ca'),
+        'value': 'verify-ca',
+        'description': gettext('SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)'),
+        'tooltip': gettext('SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)')
+      },
+      {
+        'label': gettext('verify-full'),
+        'value': 'verify-full',
+        'description': gettext('The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate'),
+        'tooltip': gettext('The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate')
+      }
+    ]
   }, {
     'value': 'sslcompression', 'label': gettext('SSL compression?'), 'vartype': 'bool',
   }, {
