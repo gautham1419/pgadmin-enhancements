@@ -182,10 +182,13 @@ The SSL Configuration Wizard for remote server connection has been enhanced to s
 
 ## 1. Adding Tooltip Description 
 ![WhatsApp Image 2025-04-02 at 22 08 27_e5e19a8d](https://github.com/user-attachments/assets/c27a5ac5-ea15-4f1d-9274-cb3229e748b9)
+
 *Fig 1.1 SSL Modes without tooltips*
 
 ![WhatsApp Image 2025-04-02 at 22 04 56_9b9751c6](https://github.com/user-attachments/assets/b67c82ee-28a5-4b75-aae0-8aab533d529e)
+
 ![WhatsApp Image 2025-04-02 at 22 04 32_68aefab4](https://github.com/user-attachments/assets/859cf7ce-3e29-4478-b92f-a806aa967c13)
+
 *Fig 1.2 SSL Modes dropdown: allow and verify-ca with tooltip description*
 
 ## 2. Backend Implementation
