@@ -3,6 +3,7 @@
 This repository contains enhancements made to pgAdmin, including:
 - **Dark Mode Toggle** (by Gautham Binu)
 - **SMS 2FA Integration** (by Arathy S)
+- **SSL Configuration Wizard Simplification** (Sona F Shukoor)
 
 ## 🔥 Features
 
@@ -173,6 +174,67 @@ Success/Failure response
 ```
 ---
 ---
+
+# 3️⃣ SSL Configuration Wizard 
+
+**Overview**
+The SSL Configuration Wizard for remote server connection has been enhanced to simplify selecting SSL modes for registering PostgreSQL connections.
+
+## 1. Adding Tooltip Description 
+![WhatsApp Image 2025-04-02 at 22 08 27_e5e19a8d](https://github.com/user-attachments/assets/c27a5ac5-ea15-4f1d-9274-cb3229e748b9)
+*Fig 1.1 SSL Modes without tooltips*
+
+![WhatsApp Image 2025-04-02 at 22 04 56_9b9751c6](https://github.com/user-attachments/assets/b67c82ee-28a5-4b75-aae0-8aab533d529e)
+![WhatsApp Image 2025-04-02 at 22 04 32_68aefab4](https://github.com/user-attachments/assets/859cf7ce-3e29-4478-b92f-a806aa967c13)
+*Fig 1.2 SSL Modes dropdown: allow and verify-ca with tooltip description*
+
+## 2. Backend Implementation
+
+Create descriptions for each SSL mode based on the PostgreSQL documentation:
+allow: "SSL is optional, but it will only be used if the server requires it"
+prefer: "SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful"
+require: "SSL encryption is required for the connection. The connection will fail if SSL cannot be established"
+disable: "SSL is disabled and the connection will be unencrypted"
+verify-ca: "SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)"
+verify-full: "The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate"
+
+Modify the server UI implementation file to add descriptions for the SSL modes configuration in the `getConnectionParameters()` function in `server.ui.js`. All text is wrapped in gettext() to ensure proper internationalization support. However, to display these descriptions in the UI, we use a frontend component `react-select` with a built-in tooltip function that renders the select field.
+
+![WhatsApp Image 2025-04-02 at 23 13 48_ceb125a8](https://github.com/user-attachments/assets/9edf16d3-c3a1-480e-af00-38133ea2d565)
+*Fig 2.1 Description and tooltip in server.ui.js*
+
+## 3.Rendering Frontend Components
+
+The select component uses `react-select` with custom components. The descriptions can be shown as tooltips using the built-in tooltip functionality of `react-select`.
+
+Modify the `CustomSelectOption` component in `FormComponents.jsx` to wrap each option in a Tooltip component and show tooltips.
+
+![WhatsApp Image 2025-04-02 at 23 17 32_88197f19](https://github.com/user-attachments/assets/a9d888f9-f52b-45e7-ad05-f9becc4c3dce)
+*Fig 3.1 Modified CustomSelectOption function in FormComponents.jsx*
+
+Modify the `InputSelect` component to ensure that each option is rendered with its respective tooltip.
+
+![WhatsApp Image 2025-04-02 at 23 19 29_f65b0679](https://github.com/user-attachments/assets/a22bc4c6-1baa-4771-9696-6b86bacc88d3)
+![WhatsApp Image 2025-04-02 at 23 20 58_6b43adfd](https://github.com/user-attachments/assets/d3d0827f-e3f2-4fe8-bfd9-85464c712ab9)
+*Fig 3.2 Modified FormComponents.jsx*
+
+## 4. Implementation Flow
+
+```
+User selects SSL mode from dropdown (`FormComponents.jsx`)
+  ↓
+Frontend calls `getConnectionParameters()` function to fetch SSL mode options with descriptions and tooltips (`server.ui.js`)
+  ↓
+SSL mode options with descriptions and tooltips are passed to `VariableSchema` class (`server.ui.js`)
+  ↓
+`VariableSchema` class processes options and prepares them for the dropdown (`server.ui.js`)
+  ↓
+SSL mode options are rendered using `CustomSelectOption` (`FormComponents.jsx`)
+  ↓
+User hovers over SSL mode option to see the tooltip (Tooltip is shown only on hover) (`FormComponents.jsx`)
+  ↓
+Tooltip content for the selected SSL mode is displayed on hover 
+```
 
 # Pgadmin4 Setup instructions:
 
