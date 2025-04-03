@@ -177,7 +177,7 @@ Success/Failure response
 
 # 3️⃣ SSL Configuration Wizard 
 
-**Overview**
+### **Overview**
 The SSL Configuration Wizard for remote server connection has been enhanced to simplify selecting SSL modes for registering PostgreSQL connections.
 
 ## 1. Adding Tooltip Description 
