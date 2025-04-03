@@ -191,12 +191,12 @@ The SSL Configuration Wizard for remote server connection has been enhanced to s
 ## 2. Backend Implementation
 
 Create descriptions for each SSL mode based on the PostgreSQL documentation:
-allow: "SSL is optional, but it will only be used if the server requires it"
-prefer: "SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful"
-require: "SSL encryption is required for the connection. The connection will fail if SSL cannot be established"
-disable: "SSL is disabled and the connection will be unencrypted"
-verify-ca: "SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)"
-verify-full: "The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate"
+- allow: "SSL is optional, but it will only be used if the server requires it"
+- prefer: "SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful"
+- require: "SSL encryption is required for the connection. The connection will fail if SSL cannot be established"
+- disable: "SSL is disabled and the connection will be unencrypted"
+- verify-ca: "SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)"
+- verify-full: "The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate"
 
 Modify the server UI implementation file to add descriptions for the SSL modes configuration in the `getConnectionParameters()` function in `server.ui.js`. All text is wrapped in gettext() to ensure proper internationalization support. However, to display these descriptions in the UI, we use a frontend component `react-select` with a built-in tooltip function that renders the select field.
 
