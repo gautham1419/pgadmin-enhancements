@@ -62,7 +62,7 @@ After implementing Toggle button :
 
 ![pgadminaftertogglelight](https://github.com/user-attachments/assets/9da448a0-f01e-46b2-b270-215df9ac804f)
 
-![pgadminaftertogglelight](https://github.com/user-attachments/assets/fb93161c-2ce8-4553-ab0a-3dc87011dbe7)
+![pgadminaftertoggledark](https://github.com/user-attachments/assets/de17ed7e-6b64-4818-af98-ab625ebae995)
 
 
 
