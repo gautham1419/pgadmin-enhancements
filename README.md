@@ -68,8 +68,7 @@ After implementing Toggle button :
 
 ## 🎥 Toggle Button Working
 
-
-(<video src="https://github.com/user-attachments/assets/1ae0b95b-1d4b-4a8b-b9df-ecb827628600" controls width="500"></video>)
+<video src="https://github.com/user-attachments/assets/1ae0b95b-1d4b-4a8b-b9df-ecb827628600" controls width="500"></video>
 
 
 
