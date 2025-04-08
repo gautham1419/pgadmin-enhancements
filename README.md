@@ -70,7 +70,8 @@ After implementing Toggle button :
 
 Click the link below to watch the demo video:
 
-[🎬 Watch Video](https://github.com/user-content-assets/assets/94d1ac4d-30d2-42f1-9b01-1295283d03ea)
+[🎬 Watch Video](<video src="https://github.com/user-attachments/assets/1ae0b95b-1d4b-4a8b-b9df-ecb827628600" controls width="500"></video>)
+
 
 
 
