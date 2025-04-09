@@ -11,13 +11,14 @@ This repository contains enhancements made to pgAdmin, including:
 
 1.Created a component called `Themetoggle.jsx`
 
--![image](https://github.com/user-attachments/assets/7984c3c6-b8f4-4ec0-9705-4b018e6052b5)
+-![themetoggle](https://github.com/user-attachments/assets/e47e8b13-d062-4a21-8d6a-1bb02fea056f)
+
 
 this component contains the logic to store the preferences and update it once the toggle button is clicked.
 
 2.Updated `Appmenubar.jsx` so as to include the `Themetoggle.jsx`
 
-![image](https://github.com/user-attachments/assets/e7dad66a-747b-43a0-a382-ef530e2fa4c9)
+-![AppMenuBar](https://github.com/user-attachments/assets/1c85fdcb-d06b-4a18-8101-5ab9908572a6)
 
 this renders the toggle component along with the other menubar items .
 
