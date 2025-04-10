@@ -253,7 +253,7 @@ Tooltip content for the selected SSL mode is displayed on hover
 
 ## B. Descriptive Error Messages
 
-## 1. GUI Design
+### 1. GUI Design
 
 ![WhatsApp Image 2025-04-02 at 21 25 04_c2e8e3ab](https://github.com/user-attachments/assets/ea8f48c1-f6e8-4575-86f5-a30b424a796c)
 
@@ -263,7 +263,7 @@ Tooltip content for the selected SSL mode is displayed on hover
 
 *Fig 1.2 Detailed and formatted error messages*
 
-## 2. Backend Connection
+### 2. Backend Connection
 
 **File:** `pgadmin4\web\pgadmin\utils\driver\psycopg3\connection.py`
 
@@ -273,7 +273,7 @@ Modified the `connection.py` file to provide custom-formatted exception error me
 
 *Fig 2.1 Modified _formatted_exception_msg() method in `Connection` class*
 
-## 3. Frontend Rendering
+### 3. Frontend Rendering
 
 **File:** `pgadmin4\web\pgadmin\static\js\helpers\Notifier.jsx`
 
@@ -319,14 +319,17 @@ Multiline descriptive error message is displayed with proper styling in the UI (
    ```
    openssl req -new -x509 -days 365 -nodes -out server.crt -keyout server.key
    ```
-  . Move them to the PostgreSQL data directory
-  . Enable SSL in `postgresql.conf`
-  . Configure SSL in pgAdmin4
-  . Verify SSL Connection in pgAdmin's Query Tool
-    ```
-    SHOW ssl;
-    SELECT ssl, client_addr FROM pg_stat_ssl;
-    ```
+
+- Move them to the PostgreSQL data directory  
+- Enable SSL in `postgresql.conf`  
+- Configure SSL in pgAdmin4  
+- Verify SSL Connection in pgAdmin's Query Tool
+  
+  ```
+  SHOW ssl;
+  SELECT ssl, client_addr FROM pg_stat_ssl;
+  ```
+
     
 # Pgadmin4 Setup instructions:
 
