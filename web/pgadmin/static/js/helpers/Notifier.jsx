@@ -121,14 +121,37 @@ class Notifier {
   }
 
   pgRespErrorNotify(error, prefixMsg='') {
-    if (error.response?.status === 410) {
-      this.alert(
-        gettext('Error: Object not found - %s.', error.response.statusText),
-        parseApiError(error)
-      );
+    let errmsg = '';
+    if (error.response) {
+      errmsg = parseApiError(error.response);
+    } else if (error.errormsg) {
+      errmsg = error.errormsg;
+    } else if (error.message) {
+      errmsg = error.message;
     } else {
-      this.error(prefixMsg + ' ' + parseApiError(error));
+      errmsg = error;
     }
+
+    // Handle multiline error messages with bullet points and HTML formatting
+    if (errmsg.includes('\n')) {
+      const lines = errmsg.split('\n');
+      const formattedLines = lines.map(line => {
+        if (line.trim().startsWith('•')) {
+          return `<div style="margin-left: 20px;">${line}</div>`;
+        }
+        // If the line contains HTML tags, return it as is
+        if (line.includes('<div') || line.includes('</div>')) {
+          return line;
+        }
+        return line;
+      });
+      errmsg = formattedLines.join('<br/>');
+    }
+
+    if (prefixMsg) {
+      errmsg = prefixMsg + '<br/>' + errmsg;
+    }
+    this.error(errmsg);
   }
 
   pgNotifier(type, error, promptmsg, onJSONResult) {

@@ -252,7 +252,7 @@ class Connection(BaseConnection):
                 password = decrypt(encpass, crypt_key)
                 # password is in bytes, for python3 we need it in string
                 if isinstance(password, bytes):
-                    password = password.decode()
+                    password = password.decode('utf-8')
             except Exception as e:
                 manager.stop_ssh_tunnel()
                 current_app.logger.exception(e)
@@ -269,54 +269,58 @@ class Connection(BaseConnection):
             else:
                 return True, None
 
+        if self.manager is None:
+            return False, gettext("Connection manager not found.")
+
         manager = self.manager
 
-        crypt_key_present, crypt_key = get_crypt_key()
-        if not crypt_key_present:
-            raise CryptKeyMissing()
-        password, encpass, is_update_password = \
-            self._check_user_password(kwargs)
-
-        passfile = kwargs['passfile'] if 'passfile' in kwargs else None
-        tunnel_password = kwargs['tunnel_password'] if 'tunnel_password' in \
-                                                       kwargs else ''
-
-        # Check SSH Tunnel needs to be created
-        if manager.use_ssh_tunnel == 1 and not manager.tunnel_created:
-            status, error = manager.create_ssh_tunnel(tunnel_password)
-            if not status:
-                return False, error
-
-        # Check SSH Tunnel is alive or not.
+        # Check SSH Tunnel is alive or not. If used by the database server
+        # for the connection.
         if manager.use_ssh_tunnel == 1:
             manager.check_ssh_tunnel_alive()
 
-        if is_update_password:
-            if encpass is None:
-                encpass = self.password or getattr(manager, 'password', None)
+        password = kwargs.get('password', None)
+        passfile = kwargs.get('passfile', None)
+        passexec = kwargs.get('passexec', None)
+        is_update_password = False
+        crypt_key_present = False
 
-            self.password = encpass
-
-        # Reset the existing connection password
-        if self.reconnecting is not False:
-            self.password = None
-
-        if not crypt_key_present:
-            raise CryptKeyMissing()
-
-        is_error, errmsg, password = self._decode_password(
-            encpass, manager, password, crypt_key)
-        if is_error:
-            return False, errmsg
+        # Get crypt key to decrypt the password
+        try:
+            crypt_key_present, crypt_key = get_crypt_key()
+        except Exception as e:
+            current_app.logger.exception(e)
+            return False, gettext(
+                "Failed to get the crypt key for the existing password.\nError: {0}".format(str(e))
+            )
 
         # If no password credential is found then connect request might
         # come from Query tool, ViewData grid, debugger etc tools.
-        # we will check for pgpass file availability from connection manager
-        # if it's present then we will use it
-        if not password and not encpass and not passfile:
-            passfile = manager.get_connection_param_value('passfile')
+        if not password and not manager.password:
             if manager.passexec:
                 password = manager.passexec.get()
+            elif manager.passfile and os.path.exists(manager.passfile):
+                password = manager.passfile
+
+        if password:
+            # Fetch Logged in User Details.
+            user = getattr(manager, 'user', None)
+            if user is None:
+                user = manager.user
+
+            try:
+                password = decrypt(password, crypt_key)
+                if isinstance(password, bytes):
+                    password = password.decode('utf-8')
+                # Store the decrypted password in the manager
+                self.password = password
+                manager.password = password
+                is_update_password = True
+            except Exception as e:
+                current_app.logger.exception(e)
+                return False, gettext(
+                    "Failed to decrypt the saved password.\nError: {0}".format(str(e))
+                )
 
         try:
             database = self.db
@@ -325,89 +329,47 @@ class Connection(BaseConnection):
             else:
                 user = manager.user
             conn_id = self.conn_id
-
+            
             import os
             os.environ['PGAPPNAME'] = '{0} - {1}'.format(
                 config.APP_NAME, conn_id)
 
-            ssl_key = get_complete_file_path(
-                manager.get_connection_param_value('sslkey'))
-            sslmode = manager.get_connection_param_value('sslmode')
-            if ssl_key and sslmode in \
-                    ['require', 'verify-ca', 'verify-full']:
-                ssl_key_file_permission = \
-                    int(oct(os.stat(ssl_key).st_mode)[-3:])
-                if ssl_key_file_permission > 600:
-                    os.chmod(ssl_key, 0o600)
+            connection_string = manager.create_connection_string(
+                database, user, password)
 
-            with ConnectionLocker(manager.kerberos_conn):
-                # Create the connection string
-                connection_string = manager.create_connection_string(
-                    database, user, password)
+            if self.async_:
+                autocommit = True
+                if 'auto_commit' in kwargs:
+                    autocommit = kwargs['auto_commit']
 
-                if self.async_:
-                    autocommit = True
-                    if 'auto_commit' in kwargs:
-                        autocommit = kwargs['auto_commit']
-
-                    async def connectdbserver():
-                        return await psycopg.AsyncConnection.connect(
-                            connection_string,
-                            cursor_factory=AsyncDictCursor,
-                            autocommit=autocommit,
-                            prepare_threshold=manager.prepare_threshold
-                        )
-                    pg_conn = asyncio.run(connectdbserver())
-                else:
-                    pg_conn = psycopg.Connection.connect(
+                async def connectdbserver():
+                    return await psycopg.AsyncConnection.connect(
                         connection_string,
-                        cursor_factory=DictCursor,
-                        prepare_threshold=manager.prepare_threshold)
+                        cursor_factory=AsyncDictCursor,
+                        autocommit=autocommit,
+                        prepare_threshold=manager.prepare_threshold
+                    )
+                pg_conn = asyncio.run(connectdbserver())
+            else:
+                pg_conn = psycopg.Connection.connect(
+                    connection_string,
+                    cursor_factory=DictCursor,
+                    prepare_threshold=manager.prepare_threshold)
+
+            self.conn = pg_conn
+            self.wasConnected = True
+            status, msg = self._initialize(conn_id, **kwargs)
+            
+            if status and is_update_password:
+                manager._update_password(password)
+            
+            return status, msg
 
         except psycopg.Error as e:
+            
             manager.stop_ssh_tunnel()
-            if hasattr(e, 'pgerror'):
-                msg = e.pgerror
-            elif e.diag.message_detail:
-                msg = e.diag.message_detail
-            else:
-                msg = str(e)
-            current_app.logger.info(
-                "Failed to connect to the database server(#{server_id}) for "
-                "connection ({conn_id}) with error message as below"
-                ":{msg}".format(
-                    server_id=self.manager.sid,
-                    conn_id=conn_id,
-                    msg=msg
-                )
-            )
-            return False, msg
-
-        # Overwrite connection notice attr to support
-        # more than 50 notices at a time
-        pg_conn.notices = deque([], self.ASYNC_NOTICE_MAXLENGTH)
-        pg_conn.add_notify_handler(self.check_notifies)
-        pg_conn.add_notice_handler(self.get_notices)
-
-        self.conn = pg_conn
-        self.wasConnected = True
-        try:
-            status, msg = self._initialize(conn_id, **kwargs)
-        except Exception as e:
-            manager.stop_ssh_tunnel()
-            current_app.logger.exception(e)
-            self.conn = None
-            if not self.reconnecting:
-                self.wasConnected = False
-            raise e
-
-        if status and is_update_password:
-            manager._update_password(encpass)
-        else:
-            if not self.reconnecting and is_update_password:
-                self.wasConnected = False
-
-        return status, msg
+            
+            return False, self._formatted_exception_msg(e, True)
 
     def _set_auto_commit(self, kwargs):
         """
@@ -1431,7 +1393,7 @@ WHERE db.datname = current_database()""")
                     """
 Failed to reset the connection to the server due to following error:
 {0}"""
-                ).Format(msg)
+                ).format(msg)
             )
             return False, msg
 
@@ -1670,85 +1632,26 @@ Failed to reset the connection to the server due to following error:
         This method is used to parse the psycopg.Error object and returns the
         formatted error message if flag is set to true else return
         normal error message.
-
-        Args:
-            exception_obj: exception object
-            formatted_msg: if True then function return the formatted exception
-            message
-
         """
-        if hasattr(exception_obj, 'pgerror'):
-            errmsg = exception_obj.pgerror
-        elif hasattr(exception_obj, 'diag') and \
-            hasattr(exception_obj.diag, 'message_detail') and\
-                exception_obj.diag.message_detail is not None:
-            errmsg = exception_obj.diag.message_primary + '\n' + \
-                exception_obj.diag.message_detail
-        else:
-            errmsg = str(exception_obj)
-
-        # if formatted_msg is false then return from the function
-        if not formatted_msg:
-            notices = self.get_notices()
-            return errmsg if notices == '' else notices + '\n' + errmsg
-
-        # Do not append if error starts with `ERROR:` as most pg related
-        # error starts with `ERROR:`
-        if not errmsg.startswith('ERROR:'):
-            errmsg = gettext('ERROR:  ') + errmsg + ' \n\n'
-
-        if exception_obj.diag.severity is not None \
-                and exception_obj.diag.message_primary is not None:
-            ex_diag_message = "{0}:  {1}".format(
-                exception_obj.diag.severity,
-                exception_obj.diag.message_primary
-            )
-            # If both errors are different then only append it
-            if errmsg and ex_diag_message and \
-                ex_diag_message.strip().strip('\n').lower() not in \
-                    errmsg.strip().strip('\n').lower():
-                errmsg += ex_diag_message
-        elif exception_obj.diag.message_primary is not None:
-            message_primary = exception_obj.diag.message_primary
-            if message_primary.lower() not in errmsg.lower():
-                errmsg += message_primary
-
-        if exception_obj.diag.sqlstate is not None:
-            if not errmsg.endswith('\n'):
-                errmsg += '\n'
-            errmsg += gettext('SQL state: ')
-            errmsg += exception_obj.diag.sqlstate
-
-        if exception_obj.diag.message_detail is not None and \
-                'Detail:'.lower() not in errmsg.lower():
-            if not errmsg.endswith('\n'):
-                errmsg += '\n'
-            errmsg += gettext('Detail: ')
-            errmsg += exception_obj.diag.message_detail
-
-        if exception_obj.diag.message_hint is not None and \
-                'Hint:'.lower() not in errmsg.lower():
-            if not errmsg.endswith('\n'):
-                errmsg += '\n'
-            errmsg += gettext('Hint: ')
-            errmsg += exception_obj.diag.message_hint
-
-        if exception_obj.diag.statement_position is not None and \
-                'Character:'.lower() not in errmsg.lower():
-            if not errmsg.endswith('\n'):
-                errmsg += '\n'
-            errmsg += gettext('Character: ')
-            errmsg += exception_obj.diag.statement_position
-
-        if exception_obj.diag.context is not None and \
-                'Context:'.lower() not in errmsg.lower():
-            if not errmsg.endswith('\n'):
-                errmsg += '\n'
-            errmsg += gettext('Context: ')
-            errmsg += exception_obj.diag.context
-
-        notices = self.get_notices()
-        return errmsg if notices == '' else notices + '\n' + errmsg
+        error_msg = str(exception_obj)
+        if isinstance(error_msg, bytes):
+            error_msg = error_msg.decode('utf-8')
+        
+        if 'getaddrinfo failed' in error_msg:
+            return "Please check:\n" + \
+                   "  • PostgreSQL is running on the server\n" + \
+                   "  • Server is accepting connections on port 5432\n" + \
+                   "  • Network/firewall settings\n" + \
+                   "  • Hostname and port are correct\n\n" + \
+                   f"System Error: {error_msg}"
+        
+        # For password authentication errors, just return the first line of the raw error
+        if 'password authentication failed' in error_msg.lower():
+            return error_msg.split('\n')[0]
+        
+        if formatted_msg:
+            return error_msg
+        return str(exception_obj)
 
     #####
     # As per issue reported on pgsycopg2 github repository link is shared below

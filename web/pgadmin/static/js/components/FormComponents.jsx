@@ -1262,7 +1262,7 @@ export function NotifierMessage({
   return (
     <StyledNotifierMessageBox className={`FormFooter-container${type}`} style={style} data-test="notifier-message">
       {showIcon && <FormIcon type={type} className={`FormFooter-icon${type}`} />}
-      <Box className={textCenter ? 'FormFooter-messageCenter' : 'FormFooter-message'}>{HTMLReactParse(message || '')}</Box>
+      <Box className={textCenter ? 'FormFooter-messageCenter' : 'FormFooter-message'} style={{whiteSpace: 'pre-line'}}>{HTMLReactParse(message || '')}</Box>
       {closable && <IconButton title={gettext('Close Message')} className={'FormFooter-closeButton ' + `FormFooter-icon${type}`} onClick={onClose}>
         <FormIcon close={true} />
       </IconButton>}

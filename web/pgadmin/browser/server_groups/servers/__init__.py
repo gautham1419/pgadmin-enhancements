@@ -1367,245 +1367,64 @@ class ServerNode(PGChildNodeView):
             }
         )
 
-    def connect(self, gid, sid, is_qt=False, server=None):
-        """
-        Connect the Server and return the connection object.
-        Verification Process before Connection:
-            Verify requested server.
-
-            Check the server password is already been stored in the
-            database or not.
-            If Yes, connect the server and return connection.
-            If No, Raise HTTP error and ask for the password.
-
-            In case of 'Save Password' request from user, encrypted Password
-            will be stored in the respected server database and
-            establish the connection OR just connect the server and do not
-            store the password.
-        """
+    @pga_login_required
+    def connect(self, gid, sid):
+        """Connect the Server"""
         current_app.logger.info(
-            'Connection Request for server#{0}'.format(sid)
-        )
+            'Connection Request for server#{0}'.format(sid))
 
-        # In case of Workspace layout ad-hoc server maybe pass to this
-        # function in that case no need to fetch the server detail based on
-        # sid.
+        server = Server.query.filter_by(id=sid).first()
         if server is None:
-            server = Server.query.filter_by(id=sid).first()
+            return bad_request(gettext("Could not find the specified server."))
 
-        shared_server = None
-        if server.shared and server.user_id != current_user.id:
-            shared_server = ServerModule.get_shared_server(server, gid)
-            server = ServerModule.get_shared_server_properties(server,
-                                                               shared_server)
-        if server is None:
-            return bad_request(self.not_found_error_msg())
-
-        # Return if username is blank and the server is shared
-        if server.username is None and not server.service and \
-                server.shared:
-            return make_json_response(
-                status=200,
-                success=0,
-                errormsg=gettext(
-                    "Please enter the server details to connect")
-            )
-        if current_user and hasattr(current_user, 'id'):
-            # Fetch User Details.
-            user = User.query.filter_by(id=current_user.id).first()
-            if user is None:
-                return unauthorized(gettext(UNAUTH_REQ))
-        else:
-            return unauthorized(gettext(UNAUTH_REQ))
-
-        data = None
-        if request.form:
-            data = request.form
-        elif request.data:
-            data = json.loads(request.data)
-
-        if data is None:
-            data = {}
-
-        password = None
-        passfile = None
-        tunnel_password = None
-        save_password = False
-        save_tunnel_password = False
-        prompt_password = False
-        prompt_tunnel_password = False
-
-        # Connect the Server
-        manager = get_driver(PG_DEFAULT_DRIVER).connection_manager(sid)
-        # Update the manager with the server details if not connected and
-        # the API call is not made from SQL Editor or View/Edit Data tool
-        if not manager.connection().connected() and not is_qt:
-            manager.update(server)
-        conn = manager.connection()
-
-        # Get enc key
-        crypt_key_present, crypt_key = get_crypt_key()
-        if not crypt_key_present:
-            raise CryptKeyMissing
-
-        # If server using SSH Tunnel
-        if server.use_ssh_tunnel:
-            if 'tunnel_password' not in data:
-                if server.tunnel_password is None:
-                    prompt_tunnel_password = True
-                else:
-                    tunnel_password = server.tunnel_password
-            else:
-                tunnel_password = data['tunnel_password'] \
-                    if 'tunnel_password' in data else ''
-                save_tunnel_password = data['save_tunnel_password'] \
-                    if tunnel_password and 'save_tunnel_password' in data \
-                    else False
-                # Encrypt the password before saving with user's login
-                # password key.
-                try:
-                    tunnel_password = encrypt(tunnel_password, crypt_key) \
-                        if tunnel_password is not None else \
-                        server.tunnel_password
-                except Exception as e:
-                    current_app.logger.exception(e)
-                    return internal_server_error(errormsg=str(e))
-        if 'password' not in data and (server.kerberos_conn is False or
-                                       server.kerberos_conn is None):
-
-            passfile_param = None
-            if hasattr(server, 'connection_params') and \
-                    'passfile' in server.connection_params:
-                passfile_param = server.connection_params['passfile']
-
-            conn_passwd = getattr(conn, 'password', None)
-            if conn_passwd is None and not server.save_password and \
-                    passfile_param is None and \
-                    server.passexec_cmd is None and \
-                    server.service is None:
-                prompt_password = True
-            elif passfile_param and passfile_param != '' and \
-                    get_complete_file_path(passfile_param):
-                passfile = passfile_param
-            else:
-                password = conn_passwd or server.password
-        else:
-            password = data['password'] if 'password' in data else None
-            save_password = data['save_password']\
-                if 'save_password' in data else False
-
-            try:
-                # Encrypt the password before saving with user's login
-                # password key.
-                password = encrypt(password, crypt_key) \
-                    if password is not None else server.password
-            except Exception as e:
-                current_app.logger.exception(e)
-                return internal_server_error(errormsg=str(e))
-
-        # Check do we need to prompt for the database server or ssh tunnel
-        # password or both. Return the password template in case password is
-        # not provided, or password has not been saved earlier.
-        if prompt_password or prompt_tunnel_password:
-            return self.get_response_for_password(
-                server, 428, prompt_password, prompt_tunnel_password)
+        # Check if server is shared with user
+        if not current_user.is_super_user:
+            shared_server = SharedServer.query.filter_by(
+                name=server.name, user_id=current_user.id,
+                server_owner_id=server.user_id).first()
+            if shared_server is None:
+                return forbidden(
+                    gettext("Access denied for server '{0}'".format(server.name)))
 
         try:
-            status, errmsg = conn.connect(
-                password=password,
-                passfile=passfile,
-                tunnel_password=tunnel_password,
-                server_types=ServerType.types()
-            )
-        except Exception as e:
-            return self.get_response_for_password(
-                server, 401, True, True,
-                getattr(e, 'message', str(e)))
+            manager = get_driver(PG_DEFAULT_DRIVER).connection_manager(server)
+            conn = manager.connection()
+            if conn.connected():
+                return make_json_response(
+                    success=1,
+                    info=gettext("Server connected."),
+                    data={'icon': 'pg-icon-server', 'connected': True}
+                )
 
-        if not status:
-            current_app.logger.error(
-                "Could not connect to server(#{0}) - '{1}'.\nError: {2}"
-                .format(server.id, server.name, errmsg)
-            )
-            if errmsg.find('Ticket expired') != -1:
-                return internal_server_error(errmsg)
+            status, msg = conn.connect()
 
-            return self.get_response_for_password(
-                server, 401, True, True, errmsg)
-        else:
-            if save_password and config.ALLOW_SAVE_PASSWORD:
-                try:
-                    # If DB server is running in trust mode then password may
-                    # not be available but we don't need to ask password
-                    # every time user try to connect
-                    # 1 is True in SQLite as no boolean type
-                    setattr(server, 'save_password', 1)
-                    if server.shared and server.user_id != current_user.id:
-                        setattr(shared_server, 'save_password', 1)
-                    else:
-                        setattr(server, 'save_password', 1)
+            if not status:
+                current_app.logger.error(
+                    "Could not connect to server. Error: {0}".format(msg)
+                )
+                # If there's an error message and it's unauthorized, return it with 401
+                if msg and '[Errno 11001]' in str(msg):
+                    return make_json_response(
+                        success=0,
+                        errormsg=msg,
+                        status=200  # Use 200 to ensure the error message is displayed
+                    )
+                return unauthorized(msg)
 
-                    # Save the encrypted password using the user's login
-                    # password key, if there is any password to save
-                    if password:
-                        if server.shared and server.user_id != current_user.id:
-                            setattr(shared_server, 'password', password)
-                        else:
-                            setattr(server, 'password', password)
-                    db.session.commit()
-                except Exception as e:
-                    # Release Connection
-                    current_app.logger.exception(e)
-                    manager.release(database=server.maintenance_db)
-                    conn = None
-
-                    return internal_server_error(errormsg=e.message)
-
-            if save_tunnel_password and config.ALLOW_SAVE_TUNNEL_PASSWORD:
-                try:
-                    # Save the encrypted tunnel password.
-                    setattr(server, 'tunnel_password', tunnel_password)
-                    db.session.commit()
-                except Exception as e:
-                    # Release Connection
-                    current_app.logger.exception(e)
-                    manager.release(database=server.maintenance_db)
-                    conn = None
-
-                    return internal_server_error(errormsg=e.message)
-
-            current_app.logger.info('Connection Established for server: \
-                %s - %s' % (server.id, server.name))
-            # Update the recovery and wal pause option for the server
-            # if connected successfully
-            _, _, in_recovery, wal_paused =\
-                recovery_state(conn, manager.version)
-
-            replication_type = get_replication_type(conn, manager.version)
-
+            current_app.logger.info('Server connected...')
             return make_json_response(
                 success=1,
                 info=gettext("Server connected."),
-                data={
-                    "sid": server.id,
-                    "did": manager.did,
-                    'icon': server_icon_and_background(True, manager, server),
-                    'connected': True,
-                    'server_type': manager.server_type,
-                    'replication_type': replication_type,
-                    'type': manager.server_type,
-                    'version': manager.version,
-                    'db': manager.db,
-                    'user': manager.user_info,
-                    'in_recovery': in_recovery,
-                    'wal_pause': wal_paused,
-                    'is_password_saved': bool(server.save_password),
-                    'is_tunnel_password_saved': True
-                    if server.tunnel_password is not None else False,
-                    'is_kerberos_conn': bool(server.kerberos_conn),
-                    'gss_authenticated': manager.gss_authenticated
-                }
+                data={'icon': 'pg-icon-server', 'connected': True}
             )
+        except CryptKeyMissing:
+            current_app.logger.error("Master password is not set.")
+            return unauthorized(gettext("Master password is not set."))
+        except Exception as e:
+            current_app.logger.error(
+                "Could not connect to server. Error: {0}".format(str(e))
+            )
+            return internal_server_error(str(e))
 
     def disconnect(self, gid, sid):
         """Disconnect the Server."""
