@@ -316,7 +316,7 @@ Multiline descriptive error message is displayed with proper styling in the UI (
 1. Created `test_ssl.py` and `test_db_connection.py` test scripts to analyze connection and test error handling.
 
 2. Generate server certificates and key, using OpenSSL to test SSL Mode connection and setup to understand the SSL configuration setup and test.
-   ```
+   ```bash
    openssl req -new -x509 -days 365 -nodes -out server.crt -keyout server.key
    ```
 
