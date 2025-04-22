@@ -9,20 +9,60 @@
 
 import axios from 'axios';
 
+// CSRF token handling for AJAX requests
+let csrfToken = null;
+let csrfHeader = null;
+
 export function setPGCSRFToken(header, token) {
-  if (!token) {
-    // Throw error message.
-    throw new Error('csrf-token meta tag has not been set');
-  }
+    console.log('Setting CSRF token:', { header, token });
+    if (!token) {
+        console.error('No CSRF token provided');
+        return;
+    }
 
-  // Configure axios to set 'X-CSRFToken' request header for
-  // every requests.
-  axios.interceptors.request.use(function (config) {
-    config.headers[header] = token;
+    csrfToken = token;
+    csrfHeader = header;
 
-    return config;
-  }, function (error) {
-    return Promise.reject(error instanceof Error ? error : Error('Something went wrong'));
-  });
+    // Configure axios defaults
+    if (window.axios) {
+        window.axios.defaults.headers.common[csrfHeader] = csrfToken;
+        console.log('Axios CSRF token configured');
+    }
+}
 
+export function getPGCSRFToken() {
+    return { header: csrfHeader, token: csrfToken };
+}
+
+// Add interceptor to handle CSRF errors
+if (window.axios) {
+    window.axios.interceptors.response.use(
+        response => response,
+        error => {
+            if (error.response && error.response.status === 401) {
+                console.log('CSRF token error detected');
+                // Try to get a new CSRF token
+                fetch('/browser/js/csrf_token', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.csrf_token) {
+                        setPGCSRFToken('X-CSRFToken', data.csrf_token);
+                        // Retry the original request
+                        const config = error.config;
+                        config.headers[csrfHeader] = csrfToken;
+                        return window.axios.request(config);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to refresh CSRF token:', err);
+                    // Redirect to login page if token refresh fails
+                    window.location.href = '/login';
+                });
+            }
+            return Promise.reject(error);
+        }
+    );
 }
