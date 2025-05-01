@@ -15,7 +15,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
 import { usePgAdmin } from '../../static/js/PgAdminProvider';
 import { useForceUpdate } from './custom_hooks';
-import ThemeToggle from '../browser/static/js/components/ThemeToggle';
+import ThemeToggle from '../../browser/static/js/components/ThemeToggle';
 
 const StyledBox = styled(Box)(({theme}) => ({
   height: '30px',

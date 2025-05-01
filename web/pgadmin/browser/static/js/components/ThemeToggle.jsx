@@ -9,25 +9,13 @@ import pgAdmin from 'sources/pgadmin';
 import gettext from 'sources/gettext';
 
 const ThemeToggle = () => {
-  try {
-    const prefStore = usePreferences();
-    if (!prefStore) {
-      console.error('Preferences store not initialized');
-      return null;
-    }
-    
-    const preferences = prefStore.getPreferencesForModule('misc');
-    if (!preferences) {
-      console.error('No preferences found for module misc');
-      return null;
-    }
-    
-    const currentTheme = preferences.theme;
-    console.log('Current theme:', currentTheme);
+  const prefStore = usePreferences();
+  const currentTheme = prefStore.getPreferencesForModule('misc').theme;
 
-    const handleThemeChange = async (event) => {
-      const newTheme = event.target.checked ? 'dark' : 'light';
-      try {
+  const handleThemeChange = async (event) => {
+    const newTheme = event.target.checked ? 'dark' : 'light';
+    
+    try {
       const themePref = prefStore.getPreferences('misc', 'theme');
       
       if (themePref) {

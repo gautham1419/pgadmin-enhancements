@@ -31,6 +31,9 @@ def load_modules(cls, app=None):
 
     from . import email as module
     submodules.append(module)
+    
+    from . import sms as module
+    submodules.append(module)
 
     from . import utils as module
     submodules.append(module)

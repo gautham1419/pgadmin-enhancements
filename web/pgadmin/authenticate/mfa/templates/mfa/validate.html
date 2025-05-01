@@ -4,7 +4,13 @@
     'views': views,
     'logoutUrl': logout_url,
     'sendEmailUrl': send_email_url,
+    'sendSmsUrl': send_sms_url,
     'csrfHeader': current_app.config.get("WTF_CSRF_HEADERS")[0],
     'csrfToken': csrf_token()
 } %}
 {% extends "security/render_page.html" %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('mfa.static', filename='js/sms_validation_fix.js') }}"></script>
+{% endblock %}

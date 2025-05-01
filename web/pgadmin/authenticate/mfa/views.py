@@ -134,14 +134,22 @@ def validate_view() -> Response:
     if mfa_method is None and len(mfa_views) > 0:
         list(mfa_views.items())[0][1]['selected'] = True
 
+    # Add URLs for both email and SMS authentication
     send_email_url = None
     if 'email' in mfa_views:
         send_email_url = url_for("mfa.send_email_code")
+    
+    # Add SMS URL to the template context
+    send_sms_url = None
+    if 'sms' in mfa_views:
+        send_sms_url = url_for("mfa.send_sms_code")
+        current_app.logger.debug(f"SMS URL for validation: {send_sms_url}")
 
     return Response(render_template(
         "mfa/validate.html", _=_, views=mfa_views, base64=base64,
         logout_url=get_logout_url(),
-        send_email_url=send_email_url
+        send_email_url=send_email_url,
+        send_sms_url=send_sms_url
     ), return_code, headers=_NO_CACHE_HEADERS, mimetype="text/html")
 
 
@@ -169,6 +177,7 @@ def _mfa_registration_view(
                           registration view.
     """
     mfa = supported_mfa['mfa']
+    current_app.logger.debug(f"_mfa_registration_view called for {mfa.name} with form_data: {form_data}")
 
     if form_data[mfa.name] == 'SETUP':
         if supported_mfa['registered'] is True:
@@ -176,7 +185,9 @@ def _mfa_registration_view(
                   MessageType.SUCCESS)
             return None
 
-        return mfa.registration_view(form_data)
+        result = mfa.registration_view(form_data)
+        current_app.logger.debug(f"mfa.registration_view returned for {mfa.name}: {result}")
+        return result
 
     if mfa_delete(mfa.name) is True:
         flash(_(
@@ -265,6 +276,7 @@ def __handle_registration_view_for_post_method(
             flash(_("Please close the dialog."), MessageType.INFO)
 
         if view is not None:
+            current_app.logger.debug(f"Rendering registration template with mfa_view: {view}")
             return None, Response(
                 render_template(
                     "mfa/register.html", _=_,
@@ -334,6 +346,10 @@ def registration_view() -> Response:
         mfa["registered"] = mfa_auths[key]["registered"]
         mfa_list.append(mfa)
         found_one_mfa = found_one_mfa or mfa["registered"]
+        
+    # Debug log for MFA list
+    current_app.logger.debug(f"MFA List: {mfa_list}")
+    current_app.logger.debug(f"MFA View: {request.form}")
 
     if request.method == 'GET':
         if is_mfa_enabled() is False:

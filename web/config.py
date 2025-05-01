@@ -887,6 +887,21 @@ MFA_SUPPORTED_METHODS = ["email", "authenticator"]
 MFA_EMAIL_SUBJECT = None
 
 ##########################################################################
+# Twilio SMS 2FA Configuration
+##########################################################################
+# NOTE: Please set the 'Twilio API credentials' to use 'sms' as two-factor
+#       authentication method.
+
+# Twilio Account SID - Get this from your Twilio dashboard
+TWILIO_ACCOUNT_SID = 'your_account_sid'
+
+# Twilio Auth Token - Get this from your Twilio dashboard
+TWILIO_AUTH_TOKEN = 'your_auth_token'
+
+# Twilio Phone Number - The phone number you purchased from Twilio
+TWILIO_FROM_NUMBER = '+1234567890'
+
+##########################################################################
 # PSQL tool settings
 ##########################################################################
 # This will enable PSQL tool in pgAdmin when running in server mode.
