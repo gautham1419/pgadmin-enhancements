@@ -1,4 +1,337 @@
-# pgAdmin 4
+# pgAdmin Enhancements
+
+This repository contains enhancements made to pgAdmin, including:
+- **Dark Mode Toggle** (by Gautham Binu)
+- **SMS 2FA Integration** (by Arathy S)
+- **SSL Configuration Wizard Simplification** (Sona F Shukoor)
+
+## 🔥 Features
+
+# 1️⃣ Dark Mode Toggle
+
+1.Created a component called `Themetoggle.jsx`
+
+-![themetoggle](https://github.com/user-attachments/assets/e47e8b13-d062-4a21-8d6a-1bb02fea056f)
+
+
+this component contains the logic to store the preferences and update it once the toggle button is clicked.
+
+2.Updated `Appmenubar.jsx` so as to include the `Themetoggle.jsx`
+
+-![AppMenuBar](https://github.com/user-attachments/assets/1c85fdcb-d06b-4a18-8101-5ab9908572a6)
+
+this renders the toggle component along with the other menubar items .
+
+3.Dark-Mode Theme Change Flow 
+```
+User clicks theme toggle
+  ↓
+ThemeToggle component
+  ↓
+handleThemeChange() triggered
+  ↓
+Update local preference store
+  ↓
+Send update to server
+  ↓
+Trigger preferenceChange event
+  ↓
+ThemeProvider receives update
+  ↓
+Apply new theme to entire app
+```
+
+4.Testing
+
+-Verified theme switching works correctly.
+
+-Confirmed preferences persist across sessions.
+
+-Tested UI consistency in both themes.
+
+-Validated all components render properly in both modes.
+
+This implementation provides a seamless dark mode experience while maintaining pgAdmin's existing functionality and user interface patterns.
+
+
+
+Pgadmin before toggle button :
+
+![pgadminhome](https://github.com/user-attachments/assets/6e18e3ec-64ab-4ab9-9bac-722e50746e79)
+
+After implementing Toggle button :
+
+![pgadminaftertogglelight](https://github.com/user-attachments/assets/9da448a0-f01e-46b2-b270-215df9ac804f)
+
+![pgadminaftertoggledark](https://github.com/user-attachments/assets/de17ed7e-6b64-4818-af98-ab625ebae995)
+
+
+
+## 🎥 Toggle Button Working
+
+<video src="https://github.com/user-attachments/assets/1ae0b95b-1d4b-4a8b-b9df-ecb827628600" controls width="500"></video>
+
+
+
+
+
+
+# 2️⃣ SMS-Based Two-Factor Authentication (2FA) 
+
+## 1. Frontend Components and State Management
+
+**File:** `pgadmin4/web/pgadmin/static/js/SecurityPages/MfaRegisterPage.jsx`
+
+- Created a new function for `SmsRegisterView` by studying the structure of `EmailRegisterView`.
+
+ 
+![image](https://github.com/user-attachments/assets/f44ba55c-6761-4e6e-88e4-cf813481b51e) 
+
+![image](https://github.com/user-attachments/assets/ed07809e-cd4b-4538-8558-90e9ab068ca2)  
+*Fig 1.1 Before change*
+
+
+![Screenshot 2025-03-29 210730](https://github.com/user-attachments/assets/bbb826e0-7526-4522-96eb-5b8b2c7d1f5a)  
+*Fig 1.2 After change*
+
+---
+## 2. Phone Number Input View
+
+- When selecting the SMS setup, users are redirected to a new page for authentication registration.
+
+**SMS Registration Page:**  
+![image1](https://github.com/user-attachments/assets/2c936853-1c70-4730-99f4-801f4c7de8c7)  
+*Fig 2.1 SMS Registration page*
+
+### Page Rendering Logic:
+- **When `phone_number_placeholder` exists:** Displays the phone input field.
+- **When `otp_placeholder` exists:** Displays the verification code input field.
+
+![Screenshot 2025-03-29 195236](https://github.com/user-attachments/assets/55a95f06-a8bb-4db7-abf4-9c667805803e)  
+*Fig 2.2 `phone_number_placeholder` - renders the SMS Registration page*
+
+---
+## 3. Form Submission
+
+- Introduced a function `handleSubmit()` in `MfaRegisterPage.jsx` to ensure entered values are correctly stored.
+
+![Screenshot 2025-03-29 170813](https://github.com/user-attachments/assets/4b2866c4-f5c2-405d-9c6e-8846b5befd5b)  
+*Fig 3.1 Data entered is registered correctly (Triggered when the form is submitted)*
+
+### Validations:
+- **Phone Number Format Validation:**
+  - Regex pattern: `^\+[1-9]\d{1,14}$`
+  - In `sms.py`, `send_to` is used to get the phone number from the form submission
+
+---
+## 4. Backend Implementation
+
+**File:** `pgadmin4/web/pgadmin/authenticate/mfa/sms/sms.py`
+
+### Key Functions:
+- **Backend Entry Point:** `def send_sms_code() -> Response:`
+- **OTP Generation:** `def __generate_otp()`
+- **SMS Sending:** `def _send_code_to_phone(_phone: str = None) -> (bool, int, str):`
+- **Code Verification:** `def validate(self, **kwargs):`
+
+---
+## 5. Testing Twilio API Integration
+
+**File:** `test_sms_manual.py`
+
+- Verifies that the Twilio API logic works correctly.
+- Ensures that SMS messages are sent and received successfully.
+- Twilio configurations are updated in `config_local.py` 
+
+![WhatsApp Image 2025-03-29 at 21 51 09_ede26dd1](https://github.com/user-attachments/assets/33a4c7d1-3e2f-4089-948b-941b61dbaeb0)  
+*Fig 5.1 SMS received correctly*
+
+---
+## 6. SMS Authentication Flow
+
+```
+Frontend (MfaRegisterPage.jsx)
+  ↓
+User enters phone number
+  ↓
+handleSubmit() sends POST to /send_sms_code
+  ↓
+Backend (sms.py)
+  ↓
+send_sms_code() validates request
+  ↓
+_send_code_to_phone() called
+  ↓
+__generate_otp() creates 6-digit code
+  ↓
+Twilio sends SMS
+  ↓
+Frontend (MfaRegisterPage.jsx)
+  ↓
+User enters verification code
+  ↓
+handleSubmit() sends POST with code
+  ↓
+Backend (sms.py)
+  ↓
+validate() checks code
+  ↓
+Success/Failure response
+```
+---
+---
+
+# 3️⃣ SSL Configuration Wizard 
+
+### **Overview**
+The SSL Configuration Wizard for remote server connection has been enhanced to simplify selecting SSL modes for registering PostgreSQL connections.
+
+## A. Adding Tooltip Description 
+
+### 1. GUI Design 
+![WhatsApp Image 2025-04-02 at 22 08 27_e5e19a8d](https://github.com/user-attachments/assets/c27a5ac5-ea15-4f1d-9274-cb3229e748b9)
+
+*Fig 1.1 SSL Modes without tooltips*
+
+![WhatsApp Image 2025-04-02 at 22 04 56_9b9751c6](https://github.com/user-attachments/assets/b67c82ee-28a5-4b75-aae0-8aab533d529e)
+
+![WhatsApp Image 2025-04-02 at 22 04 32_68aefab4](https://github.com/user-attachments/assets/859cf7ce-3e29-4478-b92f-a806aa967c13)
+
+*Fig 1.2 SSL Modes dropdown: allow and verify-ca with tooltip description*
+
+### 2. Backend Implementation
+
+**File:** `pgadmin4\web\pgadmin\browser\server_groups\servers\static\js\server.ui.js`
+
+Create descriptions for each SSL mode based on the PostgreSQL documentation:
+- allow: "SSL is optional, but it will only be used if the server requires it"
+- prefer: "SSL is optional but preferred. Will attempt to use SSL first, falling back to non-SSL if unsuccessful"
+- require: "SSL encryption is required for the connection. The connection will fail if SSL cannot be established"
+- disable: "SSL is disabled and the connection will be unencrypted"
+- verify-ca: "SSL encryption is required, and the server certificate must be verified by checking it against trusted certificate authorities (CA)"
+- verify-full: "The highest level of security. SSL encryption is required, server certificate must be verified, and the server hostname must match the certificate"
+
+Modify the server UI implementation file to add descriptions for the SSL modes configuration in the `getConnectionParameters()` function in `server.ui.js`. All text is wrapped in gettext() to ensure proper internationalization support. However, to display these descriptions in the UI, we use a frontend component `react-select` with a built-in tooltip function that renders the select field.
+
+![WhatsApp Image 2025-04-02 at 23 13 48_ceb125a8](https://github.com/user-attachments/assets/9edf16d3-c3a1-480e-af00-38133ea2d565)
+*Fig 2.1 Description and tooltip in server.ui.js*
+
+### 3.Rendering Frontend Components
+
+**File:** `pgadmin4\web\pgadmin\static\js\components\FormComponents.jsx`
+
+The select component uses `react-select` with custom components. The descriptions can be shown as tooltips using the built-in tooltip functionality of `react-select`.
+
+Modify the `CustomSelectOption` component in `FormComponents.jsx` to wrap each option in a Tooltip component and show tooltips.
+
+![WhatsApp Image 2025-04-02 at 23 17 32_88197f19](https://github.com/user-attachments/assets/a9d888f9-f52b-45e7-ad05-f9becc4c3dce)
+*Fig 3.1 Modified CustomSelectOption function in FormComponents.jsx*
+
+Modify the `InputSelect` component to ensure that each option is rendered with its respective tooltip.
+
+![WhatsApp Image 2025-04-02 at 23 19 29_f65b0679](https://github.com/user-attachments/assets/a22bc4c6-1baa-4771-9696-6b86bacc88d3)
+![WhatsApp Image 2025-04-02 at 23 20 58_6b43adfd](https://github.com/user-attachments/assets/d3d0827f-e3f2-4fe8-bfd9-85464c712ab9)
+*Fig 3.2 Modified FormComponents.jsx*
+
+### 4. Implementation Flow
+
+```
+User selects SSL mode from dropdown (`FormComponents.jsx`)
+  ↓
+Frontend calls `getConnectionParameters()` function to fetch SSL mode options with descriptions and tooltips (`server.ui.js`)
+  ↓
+SSL mode options with descriptions and tooltips are passed to `VariableSchema` class (`server.ui.js`)
+  ↓
+`VariableSchema` class processes options and prepares them for the dropdown (`server.ui.js`)
+  ↓
+SSL mode options are rendered using `CustomSelectOption` (`FormComponents.jsx`)
+  ↓
+User hovers over SSL mode option to see the tooltip (Tooltip is shown only on hover) (`FormComponents.jsx`)
+  ↓
+Tooltip content for the selected SSL mode is displayed on hover 
+```
+
+## B. Descriptive Error Messages
+
+### 1. GUI Design
+
+![WhatsApp Image 2025-04-02 at 21 25 04_c2e8e3ab](https://github.com/user-attachments/assets/ea8f48c1-f6e8-4575-86f5-a30b424a796c)
+
+*Fig 1.1 System generated cryptic error messages*
+
+![WhatsApp Image 2025-04-03 at 22 33 49_7dc6eeb0](https://github.com/user-attachments/assets/0454aa9a-0cf0-4a5e-9b05-fdfd5f907b78)
+
+*Fig 1.2 Detailed and formatted error messages*
+
+### 2. Backend Connection
+
+**File:** `pgadmin4\web\pgadmin\utils\driver\psycopg3\connection.py`
+
+Modified the `connection.py` file to provide custom-formatted exception error messages.
+
+![image](https://github.com/user-attachments/assets/013e3869-e6a3-4ce5-ba71-dbbcf77cda03)
+
+*Fig 2.1 Modified _formatted_exception_msg() method in `Connection` class*
+
+### 3. Frontend Rendering
+
+**File:** `pgadmin4\web\pgadmin\static\js\helpers\Notifier.jsx`
+
+Modified `Notifier.jsx` file to improve error message display in the UI.
+
+![image](https://github.com/user-attachments/assets/f929881a-95b8-4d70-9d17-f210313bbb9b)
+
+*Fig 3.1 `pgRespErrorNotify()` modification in `Notifier` class*
+
+**File:** `pgadmin4\web\pgadmin\static\js\components\FormComponents.jsx`
+
+Added proper styling for multiline error messages in `StyledNotifierMessageBox` component of `FormComponent.jsx`.
+
+![image](https://github.com/user-attachments/assets/2d42458d-9bd8-4865-89bd-0005a3fe55bd)
+
+*Fig 3.2 `NotifierMessage()` function modification*
+
+### 4. Implementation Flow
+
+```
+The user performs an action that triggers a database error 
+  ↓
+Backend captures the exception in `_formatted_exception_msg()` method (`connection.py`)
+  ↓
+Exception is categorized, cleaned, and formatted into a readable message (`connection.py`)
+  ↓
+The formatted error message is sent to frontend through API response
+  ↓
+Frontend receives the message and calls `pgRespErrorNotify()` to process it (`Notifier.jsx`)
+  ↓
+`pgRespErrorNotify()` prepares the error message for display, preserving formatting like line breaks (`Notifier.jsx`)
+  ↓
+Error message is passed to `StyledNotifierMessageBox` for rendering (`FormComponents.jsx`)
+  ↓
+Multiline descriptive error message is displayed with proper styling in the UI (`FormComponents.jsx`)
+```
+
+## Testing 
+
+1. Created `test_ssl.py` and `test_db_connection.py` test scripts to analyze connection and test error handling.
+
+2. Generate server certificates and key, using OpenSSL to test SSL Mode connection and setup to understand the SSL configuration setup and test.
+   ```bash
+   openssl req -new -x509 -days 365 -nodes -out server.crt -keyout server.key
+   ```
+
+- Move them to the PostgreSQL data directory  
+- Enable SSL in `postgresql.conf`  
+- Configure SSL in pgAdmin4  
+- Verify SSL Connection in pgAdmin's Query Tool
+  
+  ```
+  SHOW ssl;
+  SELECT ssl, client_addr FROM pg_stat_ssl;
+  ```
+
+    
+# Pgadmin4 Setup instructions:
 
 pgAdmin 4 is a rewrite of the popular pgAdmin3 management tool for the
 PostgreSQL (http://www.postgresql.org) database.
